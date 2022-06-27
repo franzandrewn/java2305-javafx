@@ -1,6 +1,7 @@
 package com.andrewn.java2305javafx;
 
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
@@ -10,7 +11,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -25,7 +28,11 @@ public class HelloApplication extends Application {
 //        helloView(stage);
         // Создание интерфейса напрямую с помощью создания объектов
 //        manualCreation(stage);
-        task456(stage);
+//        task456(stage);
+        // Переключение между экранами
+//        changeScenes(stage);
+//        startWithoutThread(stage);
+        startWithThread(stage);
     }
 
     private void manualCreation(Stage stage) {
@@ -127,12 +134,190 @@ public class HelloApplication extends Application {
     }
 
     private void helloView(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("hello-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 400, 400);
 //        scene.getStylesheets().add("test.css");
         stage.setTitle("Hello!");
         stage.setScene(scene);
         stage.show();
+    }
+
+    private void changeScenes(Stage stage) throws IOException {
+        FXMLLoader fxmlLoginLoader = new FXMLLoader(getClass().getResource("login.fxml"));
+        FXMLLoader fxmlIndexLoader = new FXMLLoader(getClass().getResource("index.fxml"));
+
+        Scene loginScene = new Scene(fxmlLoginLoader.load(), 400, 400);
+        Scene indexScene = new Scene(fxmlIndexLoader.load(), 400, 400);
+
+        LoginController loginController = fxmlLoginLoader.getController();
+        IndexController indexController = fxmlIndexLoader.getController();
+        loginController.setNextController(indexController);
+
+        loginController.setNextScene(indexScene);
+        loginController.setCurrentStage(stage);
+
+        indexController.setNextScene(loginScene);
+        indexController.setCurrentStage(stage);
+
+        stage.setTitle("Switching scenes");
+        stage.setScene(loginScene);
+        stage.show();
+    }
+
+    private void startWithThread(Stage stage) {
+        VBox root =  new VBox(5);
+        root.setPadding(new Insets(10));
+        root.setAlignment(Pos.CENTER);
+
+        ProgressBar progressBar = new ProgressBar(0.0);
+
+        Label barProgress = new Label();
+        Label powProgress = new Label();
+
+        Button buttonProgress = new Button("Start progress bar");
+        buttonProgress.setOnAction(event -> startProgressBar(progressBar, barProgress));
+
+        Button buttonPow = new Button("Start 2.9^100 calculate");
+        buttonPow.setOnAction(event -> startPow(powProgress));
+
+        HBox temp = new HBox(5);
+        temp.setAlignment(Pos.CENTER);
+        temp.getChildren().addAll(
+                new Label("Current step: "),
+                barProgress
+        );
+
+        root.getChildren().addAll(
+                progressBar,
+                temp,
+                buttonProgress,
+                powProgress,
+                buttonPow
+        );
+
+        stage.setWidth(300);
+        stage.setHeight(300);
+        stage.setScene(new Scene(root));
+        stage.show();
+    }
+
+    private void startProgressBar(ProgressBar progressBar, Label barProgress) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                int steps = 1000;
+                for (int i = 0; i < steps; i++) {
+                    Thread.sleep(10);
+                    updateProgress(i, steps);
+                    updateMessage(String.valueOf(i));
+                }
+                return null;
+            }
+        };
+
+        task.setOnFailed(workerStateEvent -> {
+            workerStateEvent.getSource().getException().printStackTrace();
+        });
+
+        task.setOnSucceeded(workerStateEvent -> {
+            System.out.println("Done!");
+        });
+
+        progressBar.progressProperty().bind(task.progressProperty());
+        barProgress.textProperty().bind(task.messageProperty());
+
+        new Thread(task).start();
+    }
+
+    private void startPow(Label powProgress) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                int steps = 99;
+                double initValue = 2.9;
+                for (int i = 0; i < steps; i++) {
+                    initValue *= 2.9;
+                    Thread.sleep(100);
+                    updateProgress(i, steps);
+                    updateMessage(String.valueOf(initValue));
+                }
+                return null;
+            }
+        };
+
+        task.setOnFailed(workerStateEvent -> {
+            workerStateEvent.getSource().getException().printStackTrace();
+        });
+
+        task.setOnSucceeded(workerStateEvent -> {
+            System.out.println("Pow done!");
+        });
+
+        powProgress.textProperty().bind(task.messageProperty());
+
+        new Thread(task).start();
+    }
+
+    private void startWithoutThread(Stage stage) {
+        VBox root =  new VBox(5);
+        root.setPadding(new Insets(10));
+        root.setAlignment(Pos.CENTER);
+
+        ProgressBar progressBar = new ProgressBar(0.0);
+
+        Label barProgress = new Label();
+        Label powProgress = new Label();
+
+        Button buttonProgress = new Button("Start progress bar");
+        buttonProgress.setOnAction(event -> startProgressBarAlt(progressBar, barProgress));
+
+        Button buttonPow = new Button("Start 2.9^100 calculate");
+        buttonPow.setOnAction(event -> startPowAlt(powProgress));
+
+        HBox temp = new HBox(5);
+        temp.setAlignment(Pos.CENTER);
+        temp.getChildren().addAll(
+                new Label("Current step: "),
+                barProgress
+        );
+
+        root.getChildren().addAll(
+                progressBar,
+                temp,
+                buttonProgress,
+                powProgress,
+                buttonPow
+        );
+
+        stage.setWidth(300);
+        stage.setHeight(300);
+        stage.setScene(new Scene(root));
+        stage.show();
+    }
+
+    private void startPowAlt(Label powProgress) {
+        double initValue = 2.9;
+        for (int i = 0; i < 99; i++) {
+            initValue *= 2.9;
+            powProgress.setText(String.valueOf(initValue));
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void startProgressBarAlt(ProgressBar progressBar, Label barProgress) {
+        int steps = 1000;
+        for (int i = 0; i < steps; i++) {
+            progressBar.progressProperty().setValue((double) i / steps);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public static void main(String[] args) {
